@@ -765,9 +765,6 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			}
 			if ( '1' === $terms ) {
 				add_dashboard_page( '', '', 'manage_options', 'wplegal-wizard', '' );
-				if ( version_compare( $this->version, '2.7.0', '<' ) ) {
-					add_submenu_page( 'legal-pages', __( 'Cookie Bar', 'wplegalpages' ), __( 'Cookie Bar', 'wplegalpages' ), 'manage_options', 'lp-eu-cookies', array( $this, 'update_eu_cookies' ) );
-				}
 			}
 		}
 		function conditional_dashboard_callback() {
@@ -1600,16 +1597,6 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			wp_enqueue_script( self::$wplp_plugin_name . '-vue-mascot' );
 		}
 
-		/**
-		 * This Callback function for EU_Cookies Page menu for WPLegalpages.
-		 */
-		public function update_eu_cookies() {
-			$activated = apply_filters( 'wplegal_check_license_status', true );
-			if ( $activated ) {
-				$this->enqueue_common_style_scripts();
-				include_once 'update-eu-cookies.php';
-			}
-		}
 
 		/**
 		 * Accpet terms.
