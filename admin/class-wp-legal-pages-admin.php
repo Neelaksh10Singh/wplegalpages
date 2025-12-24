@@ -1510,7 +1510,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'help_center'  => array(
 							'title'       => __( 'Help Center', 'wplegalpages' ),
 							'description' => __( 'Read the documentation to find answers to your questions.', 'wplegalpages' ),
-							'link'        => 'https://club.wpeka.com/docs/wp-legal-pages',
+							'link'        => 'https://wplegalpages.com/docs/wplp-docs/',
 							'link_name'   => __( 'Learn More', 'wplegalpages' ),
 							'image_src'   => WPL_LITE_PLUGIN_URL . 'admin/js/vue/images/help_center.svg',
 							'alt_text'	  => "Help Center Icon",
@@ -1518,7 +1518,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'video_guides' => array(
 							'title'       => __( 'Video Guides', 'wplegalpages' ),
 							'description' => __( 'Explore video tutorials for insights on WP Legal Pages functionality.', 'wplegalpages' ),
-							'link'        => 'https://club.wpeka.com/docs/wp-legal-pages/video-guides/video-guides',
+							'link'        => 'https://wplegalpages.com/docs/non-knowledgebase/video-guides/video-resources/',
 							'link_name'   => __( 'Watch Now', 'wplegalpages' ),
 							'image_src'   => WPL_LITE_PLUGIN_URL . 'admin/js/vue/images/video_guides.svg',
 							'alt_text'	  => 'Video Guides Icon',
@@ -1526,7 +1526,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'faq_answers'  => array(
 							'title'       => __( 'FAQ with Answers', 'wplegalpages' ),
 							'description' => __( 'Find answers to some of the most commonly asked questions.', 'wplegalpages' ),
-							'link'        => 'https://club.wpeka.com/docs/wp-legal-pages/faqs',
+							'link'        => 'https://wplegalpages.com/docs/wplp-docs/guides/',
 							'link_name'   => __( 'Find Out', 'wplegalpages' ),
 							'image_src'   => WPL_LITE_PLUGIN_URL . 'admin/js/vue/images/faq_answers.svg',
 							'alt_text'	  => 'FAQ with Answers Icon',
@@ -1542,7 +1542,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'feedback'     => array(
 							'title'       => __( 'Feedback', 'wplegalpages' ),
 							'description' => __( 'Enjoy our WordPress plugin? Share your feedback!', 'wplegalpages' ),
-							'link'        => 'https://club.wpeka.com/contact',
+							'link'        => 'https://wordpress.org/support/plugin/wplegalpages/reviews/#new-post',
 							'link_name'   => __( 'Find Out', 'wplegalpages' ),
 							'image_src'   => WPL_LITE_PLUGIN_URL . 'admin/js/vue/images/feedback.svg',
 							'alt_text'	  => 'Feedback Icon',
