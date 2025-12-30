@@ -248,8 +248,14 @@ class WP_Legal_Pages_App_Auth {
 		$instance_id      = $wcam_lib_legalpages->wc_am_instance_id;
 		$object           = $wcam_lib_legalpages->wc_am_domain;
 		$software_version = $wcam_lib_legalpages->wc_am_software_version;
-		$api_auth_url     = $this->get_api_url( 'pricing' );
+		$is_user_connected = $settings->is_connected();
+		$api_user_plan = $settings->get_plan();
 
+		if ( ! $is_user_connected || $api_user_plan === 'free' ) {
+			$api_auth_url     = $this->get_api_url( 'pricing' );
+		}else{
+			$api_auth_url     = $this->get_api_url( 'my-account/active-plans/' );
+		}
 		if($is_user_from_connection_popup){
 			$auth_url = add_query_arg(
 				array(
