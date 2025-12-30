@@ -1581,7 +1581,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'support_text'       => __( 'Support', 'wplegalpages' ),
 						'support_url'        => $support_url,
 						'documentation_text' => __( 'Documentation', 'wplegalpages' ),
-						'documentation_url'  => 'https://wplegalpages.com/docs/wp-legal-pages/',
+						'documentation_url'  => 'https://wplegalpages.com/docs/wplp-docs/',
 						'faq_text'           => __( 'FAQ', 'wplegalpages' ),
 						'faq_url'            => 'https://wplegalpages.com/docs/wp-legal-pages/faqs/',
 						'upgrade_text'       => __( 'Upgrade to Pro &raquo;', 'wplegalpages' ),
