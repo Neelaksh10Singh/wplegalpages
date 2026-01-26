@@ -186,53 +186,19 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			array(
 				'methods'  => 'POST',
 				'callback' => array($this, 'wplp_send_data_to_dashboard_appwplp_react_app'), // Function to handle the request
-				'permission_callback' => function(WP_REST_Request $request) use ($master_key) {
-					
-
-					$auth_header = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
-					if ( ! preg_match('/Bearer\s(\S+)/', $auth_header, $matches) ) {
-						return new WP_Error('no_token', 'Authorization token missing.', ['status' => 401]);
-					}
-					$token = sanitize_text_field($matches[1]);
-
-					// 2. Validate token with central WP site
-					$validate = wp_remote_post(
-						'https://app.wplegalpages.com/wp-json/jwt-auth/v1/token/validate',
-						[
-							'headers' => [
-								'Authorization' => 'Bearer ' . $token,
-								'Content-Type'  => 'application/json'
-							],
-							'timeout' => 15
-						]
-					);
-
-					if ( is_wp_error($validate) ) {
-						return new WP_Error('token_validation_failed', $validate->get_error_message(), ['status' => 401]);
-					}
-
-					$code = wp_remote_retrieve_response_code($validate);
-					if ( $code !== 200 ) {
-						return new WP_Error('invalid_token', 'Token validation failed.', ['status' => 401]);
-					}
-
-					// 3. Extract master_key from the request body
-					$body = $request->get_json_params();
-					$incoming_key = isset($body['master_key']) ? sanitize_text_field($body['master_key']) : '';
-
-					if ( empty($incoming_key) ) {
-						return new WP_Error('master_key_missing', 'Master key not provided.', ['status' => 401]);
-					}
-
-					if ( $master_key !== $incoming_key ) {
-						return new WP_Error('invalid_master_key', 'Master key mismatch.', ['status' => 401]);
-					}
-
-					return true; // All good → allow callback
-				},
+				'permission_callback'	=> array($this, 'permission_callback_for_react_app'),
 			)
 		);
-		
+		//API endpooint for resyncing sites
+		register_rest_route( 
+			'wplp-react/v1',
+			'/resync-sites',
+			array(
+				'methods'  => 'POST',
+				'callback' =>  array($this,'wplp_resync_all_sites'), // Function to handle the request
+				'permission_callback' => array($this, 'permission_callback_for_react_app'),
+				)
+			);
 		register_rest_route(
 			'wpl/v2', // Namespace
 			'/get_user_dashboard_data', 
@@ -320,6 +286,45 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				)
 			);
 		}
+	}
+
+	public function permission_callback_for_react_app(WP_REST_Request $request) {
+		$this->settings = new WP_Legal_Pages_Settings();
+
+		$master_key = $this->settings->get('api','token');		
+		$auth_header = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+		if ( ! preg_match('/Bearer\s(\S+)/', $auth_header, $matches) ) {
+			return new WP_Error('no_token', 'Authorization token missing.', ['status' => 401]);
+		}
+		$token = sanitize_text_field($matches[1]);
+		// 2. Validate token with central WP site
+		$validate = wp_remote_post(
+			GDPR_APP_URL . '/wp-json/jwt-auth/v1/token/validate',
+			[
+				'headers' => [
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json'
+				],
+				'timeout' => 15
+			]
+		);
+		if ( is_wp_error($validate) ) {
+			return new WP_Error('token_validation_failed', $validate->get_error_message(), ['status' => 401]);
+		}
+		$code = wp_remote_retrieve_response_code($validate);
+		if ( $code !== 200 ) {
+			return new WP_Error('invalid_token', 'Token validation failed.', ['status' => 401]);
+		}
+		// 3. Extract master_key from the request body
+		$body = $request->get_json_params();
+		$incoming_key = isset($body['master_key']) ? sanitize_text_field($body['master_key']) : '';
+		if ( empty($incoming_key) ) {
+			return new WP_Error('master_key_missing', 'Master key not provided.', ['status' => 401]);
+		}
+		if ( $master_key !== $incoming_key ) {
+			return new WP_Error('invalid_master_key', 'Master key mismatch.', ['status' => 401]);
+		}
+		return true; // All good → allow callback
 	}
 
 	function wplp_generate_api_secret() {
@@ -489,6 +494,49 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'api_secret' 					   => get_option('wplegalpages_api_secret'),
 				'policy_preview'				   => $policy_preview,
 			)
+		);
+	}
+
+	// Function to resync all sites when user updates plan from react saas
+	function wplp_resync_all_sites( WP_REST_Request $request ) {
+		
+		$payload = $request->get_json_params();
+		if (
+			empty( $payload['response'] ) ||
+			empty( $payload['response']['account'] ) ||
+			empty( $payload['response']['account']['product_id'] )
+		) {
+			return new WP_REST_Response(
+				[ 'error' => 'Invalid payload' ],
+				400
+			);
+		}
+
+		
+		global $wcam_lib_legalpages;
+		$data        = $payload['response'];
+		//get option first
+		$existing_data = get_option( 'wpeka_api_framework_app_settings', [] );
+		$data = array_replace_recursive( $existing_data, $data );
+		//update option
+		update_option( 'wpeka_api_framework_app_settings', $data );
+
+		$wcam_lib_legalpages->product_id = $data['account']['product_id'] ?? '';
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/settings/class-wp-legal-pages-settings.php';
+		if ( isset( $payload['update_options'] ) ) {
+
+			if ( $payload['update_options'] === 'success' ) {
+				update_option( $wcam_lib_legalpages->wc_am_activated_key, 'Activated' );
+				update_option( $wcam_lib_legalpages->wc_am_deactivate_checkbox_key, 'off' );
+			}
+		} else {
+			update_option( $wcam_lib_legalpages->wc_am_activated_key, 'Activated' );
+		}
+
+		return new WP_REST_Response(
+			[ 'status' => 'connected', 'plan_synced' => true ],
+			200
 		);
 	}
 
