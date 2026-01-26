@@ -292,7 +292,6 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		$this->settings = new WP_Legal_Pages_Settings();
 
 		$master_key = $this->settings->get('api','token');		
-		error_log("MASTER KEY ", $master_key);
 		$auth_header = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
 		if ( ! preg_match('/Bearer\s(\S+)/', $auth_header, $matches) ) {
 			return new WP_Error('no_token', 'Authorization token missing.', ['status' => 401]);
