@@ -2707,6 +2707,10 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			$pro_installed     = isset( $installed_plugins['wplegalpages-pro/wplegalpages-pro.php'] ) ? "Activated" : "Not Activated";
 
 			$privacy_templates = file_get_contents( plugin_dir_path( __DIR__ ) . 'includes/privacy_templates.json' );
+			$last_selected_page = get_option( 'wplegal_last_selected_page' );
+			if ( empty( $last_selected_page ) ) {
+				$last_selected_page = 'privacy_policy';
+			}
 
 			wp_localize_script(
 				$this->plugin_name . '-vue-script',
@@ -2757,6 +2761,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 						'subtitle' => __( 'Review your policy template and publish', 'wplegalpages' ),
 					),
 					'templates' => json_decode( $privacy_templates, true ),
+					'last_selected_page' => $last_selected_page,
 				)
 			);
 			wp_print_styles( $this->plugin_name . '-select2' );
@@ -3891,7 +3896,12 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			);
 			if ( isset( $_GET['action'] ) ) {
 				$step  = isset( $_GET['step'] ) ? sanitize_text_field( wp_unslash( $_GET['step'] ) ) : '';
-				$page  = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : 'privacy_policy';
+				if ( isset( $_GET['page'] ) ) {
+					$page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
+					update_option( 'wplegal_last_selected_page', $page );
+				} else {
+					$page = get_option( 'wplegal_last_selected_page', 'privacy_policy' );
+				}
 				$nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
 				if ( wp_verify_nonce( $nonce, 'admin-ajax-nonce' ) ) {
 					$data = array();
