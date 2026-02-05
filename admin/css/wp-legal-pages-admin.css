@@ -150,7 +150,6 @@ a {
 	width: auto !important;
 }
 .create-popup{
-	margin-left: 210px;
 	width: auto !important;
 }
 
@@ -1694,7 +1693,8 @@ wp-legalpages-admin-tab-content {
 
 .wp-legalpages-admin-tabs-content .wp-legalpages-admin-tabs-inner-content .wp-legalpages-admin-tab-content .wplp-wrap {
 	margin: 0;
-	padding: 20px;
+	padding-left: 50px;
+	padding-right: 50px;
 	padding-top: 0px;
 	min-height: 665px;
 }
