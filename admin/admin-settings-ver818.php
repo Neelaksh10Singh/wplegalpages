@@ -55,7 +55,7 @@ if ( '1' === $lpterms ) {
 		<?php
 		echo sprintf(
 			/* translators: %s: Club link */
-			esc_html__( 'WPLegalPages is also available as a part of %s Membership with 20+ more premium WordPress products.', 'wplegalpages' ),
+			esc_html__( 'WPLP Legal Pages is also available as a part of %s Membership with 20+ more premium WordPress products.', 'wplegalpages' ),
 			sprintf(
 			/* translators: %s: Club link */
 				'<a href="%s" target="_blank">WPEka Club</a>',
