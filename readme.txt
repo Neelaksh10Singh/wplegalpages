@@ -7,11 +7,11 @@ Tags: CCPA, GDPR, Privacy Policy, Terms and conditions, Cookie Policy
 Requires at least: 5.0
 Requires PHP: 7.0
 Tested up to: 6.8.1
-Stable tag: 3.5.8
+Stable tag: 3.5.9
 
 Create and manage legal pages for WordPress websites using ready-made policy templates that support common privacy and compliance requirements.
 
-[WPLP Legal Pages](https://www.youtube.com/watch?v=93LIh4ARMN8) helps WordPress website owners create, publish, and manage legal pages commonly required for websites, including privacy disclosures, terms, and related policies.
+[WPLP Legal Pages](https://wplegalpages.com/?utm_source=wordpress.org&utm_medium=wplegalpageplugin&utm_campaign=readme) helps WordPress website owners create, publish, and manage legal pages commonly required for websites, including privacy disclosures, terms, and related policies.
 
 The plugin provides structured templates and configuration options designed to support a range of privacy and consumer protection laws. It can be used by blogs, business websites, eCommerce stores, and SaaS platforms.
 
@@ -23,6 +23,7 @@ WPLP Legal Pages is part of the WPLP Compliance Platform and can be used alongsi
 WPLP Legal Pages includes a library of **30+ legal policy templates** covering common website and business use cases.
 
 Available templates include:
+
 - Privacy Policy
 
 - Terms and Conditions
@@ -210,6 +211,12 @@ For free users, support is available through the WordPress.org forums. Pro users
 Yes, WPLP Legal Pages integrates seamlessly with WPForms, Contact Form 7, Gravity Forms, and more.
 
 == Changelog ==
+
+= 3.5.9 =
+* Bug Fixes & Improvements:
+    * Fixed an issue where the **upgrade popup was not appearing** when users attempted to create a Pro legal page
+    * Resolved **a UI issue in the “Create Popup” flow** that caused layout and design inconsistencies
+    * Fixed a bug affecting **legal page creation and editing**, improving reliability and stability
 
 = 3.5.8 =
 * Added support for enhanced App Dashboard

@@ -544,7 +544,6 @@ class WP_Legal_Pages_App_Auth {
 		$this->make_auth_request();
 
 		$args = array(
-			'headers' => $this->headers,
 			'method'  => strtoupper( $method ),
 			'timeout' => $this->timeout,
 			'body'    => $data,

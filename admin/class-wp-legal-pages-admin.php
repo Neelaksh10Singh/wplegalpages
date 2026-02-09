@@ -1710,7 +1710,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		 * @return mixed
 		 */
 		public function wplegalpages_add_menu_meta_box( $object ) {
-			add_meta_box( 'wplegalpages-menu-metabox', __( 'WPLegalPages', 'wplegalpages' ), array( $this, 'wplegalpages_menu_meta_box' ), 'nav-menus', 'side', 'low' );
+			add_meta_box( 'wplegalpages-menu-metabox', __( 'WPLP Legal Pages', 'wplegalpages' ), array( $this, 'wplegalpages_menu_meta_box' ), 'nav-menus', 'side', 'low' );
 			return $object;
 		}
 
@@ -2777,7 +2777,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		<head>
 			<meta name="viewport" content="width=device-width"/>
 			<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-			<title><?php esc_html_e( 'WPLegalPages &rsaquo; Wizard', 'wplegalpages' ); ?></title>
+			<title><?php esc_html_e( 'WPLP Legal Pages &rsaquo; Wizard', 'wplegalpages' ); ?></title>
 			<?php do_action( 'admin_print_styles' ); ?>
 			<?php do_action( 'admin_print_scripts' ); ?>
 			<?php do_action( 'admin_head' ); ?>
