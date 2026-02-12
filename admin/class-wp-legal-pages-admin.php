@@ -109,28 +109,35 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		global $wpdb;
 		$post_tbl     = $wpdb->prefix . 'posts';
 		$postmeta_tbl = $wpdb->prefix . 'postmeta';
-		$pagesresult = $wpdb->get_results(
-    		$wpdb->prepare(
-    		    "
-    		    SELECT ptbl.*
-    		    FROM {$post_tbl} AS ptbl
-    		    INNER JOIN {$postmeta_tbl} AS pmtbl
-    		        ON ptbl.ID = pmtbl.post_id
-    		    WHERE ptbl.post_status = %s
-    		      AND pmtbl.meta_key = %s
-    		    ORDER BY ptbl.post_date DESC
-    		    LIMIT 5
-    		    ",
-    		    'publish',
-    		    'is_legal'
-    		)
-		); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		
+		$pagesresult = $wpdb->get_results(
+		    $wpdb->prepare(
+		        "
+		        SELECT 
+		            ptbl.post_title,
+		            ptbl.post_modified,
+					ptbl.post_content,
+		            lpt.meta_value AS legal_page_type
+		        FROM {$post_tbl} AS ptbl
+		        INNER JOIN {$postmeta_tbl} AS islegal
+		            ON ptbl.ID = islegal.post_id
+		            AND islegal.meta_key = %s
+		        INNER JOIN {$postmeta_tbl} AS lpt
+		            ON ptbl.ID = lpt.post_id
+		            AND lpt.meta_key = %s
+		        WHERE ptbl.post_status = %s
+		        ",
+		        'is_legal',
+		        'legal_page_type',
+		        'publish'
+		    )
+		); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
 		foreach ( $pagesresult as $res ) {
 			$policy_preview[] = array(
 				'name'    		=> $res->post_title,
-				'last_update' 	=> gmdate( 'Y/m/d H:i:s', strtotime( $res->post_date ) ),
-				'image_key'   	=> $res->post_name,
+				'last_update' 	=> gmdate( 'Y/m/d H:i:s', strtotime( $res->post_modified ) ),
+				'image_key'   	=> $res->legal_page_type,
 				'content' 		=> $res->post_content,
 			);
 		}
@@ -189,6 +196,17 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'permission_callback'	=> array($this, 'permission_callback_for_react_app'),
 			)
 		);
+
+		register_rest_route(
+			'wplp-react/v1',			
+			'/get_legal_pages_data',
+			array(
+				'methods'  => 'POST',
+				'callback' => array($this, 'wplp_fetch_legal_pages_data_react_app'),  // Function to handle the request
+				'permission_callback'	=> array($this, 'permission_callback_for_react_app'),
+			)
+		);
+
 		//API endpooint for resyncing sites
 		register_rest_route( 
 			'wplp-react/v1',
@@ -309,6 +327,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		$token = sanitize_text_field($matches[1]);
 		// 2. Validate token with central WP site
 		$validate = wp_remote_post(
+			WPLEGAL_APP_URL . '/wp-json/jwt-auth/v1/token/validate',
 			WPLEGAL_APP_URL . '/wp-json/jwt-auth/v1/token/validate',
 			[
 				'headers' => [
@@ -591,6 +610,115 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'product_id' 					   => $product_id,
 				'legal_pages_published'			   => $count,
 				'policy_preview'				   => $policy_preview,
+			)
+		);
+	}
+
+ 	public function wplp_fetch_legal_pages_data_react_app( WP_REST_Request $request ) {
+		ob_start();
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/settings/class-wp-legal-pages-settings.php';
+
+		$this->settings = new WP_Legal_Pages_Settings();
+		$api_user_plan = $this->settings->get_plan();
+		$product_id = $this->settings->get( 'account', 'product_id' );
+
+		global $wpdb;
+		$post_tbl     = $wpdb->prefix . 'posts';
+		$postmeta_tbl = $wpdb->prefix . 'postmeta';
+		$post_tbl     = esc_sql( $post_tbl );
+		$postmeta_tbl = esc_sql( $postmeta_tbl );
+		
+		$pagesresult = $wpdb->get_results(
+		    $wpdb->prepare(
+		        "
+		        SELECT 
+					ptbl.post_title,
+		            ptbl.post_modified,
+		            ptbl.guid,
+					ptbl.post_content,
+		            lpt.meta_value AS legal_page_type
+		        FROM {$post_tbl} AS ptbl
+		        INNER JOIN {$postmeta_tbl} AS islegal
+		            ON ptbl.ID = islegal.post_id
+		            AND islegal.meta_key = %s
+		        INNER JOIN {$postmeta_tbl} AS lpt
+		            ON ptbl.ID = lpt.post_id
+		            AND lpt.meta_key = %s
+		        WHERE ptbl.post_status = %s
+		        ",
+		        'is_legal',
+		        'legal_page_type',
+		        'publish'
+		    )
+		);
+
+		foreach ( $pagesresult as $res ) {
+			$created_policies[] = array(
+				'title'    		=> $res->post_title,
+				'lastUpdated' 	=> gmdate( 'Y/m/d H:i:s', strtotime( $res->post_modified ) ),
+				'isActive'		=> true,
+				'liveLink'		=> $res->guid,
+				'icon'   		=> $res->legal_page_type,
+				'description' 	=> "",
+				'content'		=> $res->post_content,
+			);
+		}
+
+		$lp_general = get_option("lp_general");
+		$business_info[] = array(
+			'domain'			=> $lp_general['domain'],
+			'business'			=> $lp_general['business'],
+			'trading'			=> $lp_general['trading'],
+			'phone'				=> $lp_general['phone'],
+			'street'			=> $lp_general['street'],
+			'cityState'			=> $lp_general['cityState'],
+			'country'			=> $lp_general['country'],
+			'email'				=> $lp_general['email'],
+			'address'			=> $lp_general['address'],
+			'facebookUrl'		=> $lp_general['facebook-url'],
+			'googleUrl'			=> $lp_general['google-url'],
+			'twitterUrl'		=> $lp_general['twitter-url'],
+			'linkedinUrl'		=> $lp_general['linkedin-url'],
+			'date'				=> $lp_general['date'],
+			'days'				=> $lp_general['days'],
+			'duration'			=> $lp_general['duration'],
+			'disclosingParty'	=> $lp_general['disclosing-party'],
+			'recipientParty'	=> $lp_general['recipient-party'],
+		);
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/wizard/class-wp-legal-pages-wizard-page.php';
+		$lp            = new WP_Legal_Pages_Wizard_Page();
+		$languages    = $lp->get_available_languages();
+
+		require_once ABSPATH . 'wp-admin/includes/translation-install.php';
+		$translations = wp_get_available_translations();
+
+		$lang_options   = array();
+		$lang_options[] = array(
+			'value'    => 'en_US',
+			'label'    => 'English (United States)',
+		);
+		foreach ( $languages as $locale ) {
+			if ( isset( $translations[ $locale ] ) ) {
+				$translation = $translations[ $locale ];
+				$lang_options[]   = array(
+					'value'    => $translation['language'],
+					'label'    => $translation['native_name'],
+				);
+			}
+		}
+
+		ob_end_clean();
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'plan'                		       => $api_user_plan,
+				'product_id' 					   => $product_id,
+				'createdPolicies'				   => $created_policies ?? [],
+				'businessInfo'					   => $business_info ?? [],
+				'languages'						   => $lang_options ?? [],
+				'selected_lang'					   => $lp_general['language'] ?? 'en_US'
 			)
 		);
 	}
