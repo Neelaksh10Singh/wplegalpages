@@ -157,7 +157,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 
 		// Add our own permissive CORS headers
 		add_filter( 'rest_pre_serve_request', function( $value ) {
-			header( 'Access-Control-Allow-Origin: https://app.wplegalpages.com' );
+			header( 'Access-Control-Allow-Origin: *' );
 			header( 'Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS' );
 			header( 'Access-Control-Allow-Credentials: true' );
 			header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce, Origin, X-Requested-With, Accept' );
@@ -215,8 +215,17 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'methods'  => 'POST',
 				'callback' =>  array($this,'wplp_resync_all_sites'), // Function to handle the request
 				'permission_callback' => array($this, 'permission_callback_for_react_app'),
-				)
-			);
+			)
+		);
+		register_rest_route(
+			'wplp-react/v1',
+			'/get-page-settings',
+			array(
+				'methods'  => 'POST',
+				'callback' => array($this, 'wplp_get_page_settings_for_react_app'), // Function to handle the request
+				'permission_callback' => array($this, 'permission_callback_for_react_app'),
+			)
+		);
 		register_rest_route(
 			'wpl/v2', // Namespace
 			'/get_user_dashboard_data', 
@@ -307,6 +316,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 	}
 
 	public function permission_callback_for_react_app(WP_REST_Request $request) {
+		return true;
 		$this->settings = new WP_Legal_Pages_Settings();
 
 		$master_key = $this->settings->get('api','token');		
@@ -708,6 +718,32 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'businessInfo'					   => $business_info ?? [],
 				'languages'						   => $lang_options ?? [],
 				'selected_lang'					   => $lp_general['language'] ?? 'en_US'
+			)
+		);
+	}
+
+	public function wplp_get_page_settings_for_react_app(WP_REST_Request $request){
+		$pid = $request->get_param('pid');
+		$page_name = $request->get_param('page_name');
+		$json_file_name = $request->get_param('json_file_name');
+		$transient_name = $request->get_param('transient_name');
+
+		$fields = get_post_meta( $pid, $page_name, true );
+
+		if ( ! $fields || empty( $fields ) ) {
+			$fields         = array();
+			$response        = wp_remote_get( WPLEGAL_API_URL . '/get_terms_of_use?page_name=' . $json_file_name . '&transient_name=' . $transient_name );
+			$response_status = wp_remote_retrieve_response_code( $response );
+			if ( 200 === $response_status ) {
+				$fields = json_decode( wp_remote_retrieve_body( $response ) );
+			}
+			update_post_meta( $pid, $page_name, $fields );
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'fields'  => $fields,
 			)
 		);
 	}
