@@ -328,7 +328,6 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		// 2. Validate token with central WP site
 		$validate = wp_remote_post(
 			WPLEGAL_APP_URL . '/wp-json/jwt-auth/v1/token/validate',
-			WPLEGAL_APP_URL . '/wp-json/jwt-auth/v1/token/validate',
 			[
 				'headers' => [
 					'Authorization' => 'Bearer ' . $token,
