@@ -126,6 +126,8 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		            ON ptbl.ID = lpt.post_id
 		            AND lpt.meta_key = %s
 		        WHERE ptbl.post_status = %s
+				ORDER BY ptbl.post_modified DESC
+        		LIMIT 5
 		        ",
 		        'is_legal',
 		        'legal_page_type',
@@ -136,7 +138,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		foreach ( $pagesresult as $res ) {
 			$policy_preview[] = array(
 				'name'    		=> $res->post_title,
-				'last_update' 	=> gmdate( 'Y/m/d H:i:s', strtotime( $res->post_modified ) ),
+				'last_update' 	=> get_gmt_from_date( $res->post_modified ),
 				'image_key'   	=> $res->legal_page_type,
 				'content' 		=> $res->post_content,
 			);
@@ -608,9 +610,35 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/settings/class-wp-legal-pages-settings.php';
 
-		$this->settings = new WP_Legal_Pages_Settings();
-		$api_user_plan = $this->settings->get_plan();
-		$product_id = $this->settings->get( 'account', 'product_id' );
+		$settings = new WP_Legal_Pages_Settings();
+		$api_user_plan = $settings->get_plan();
+		$product_id = $settings->get( 'account', 'product_id' );
+		$api_key    = $settings->get( 'api', 'token' );
+		$id = $settings->get_user_id();
+
+		$args = array(
+			'api_key' => $api_key,
+		);
+
+		global $wcam_lib_legalpages;
+
+		update_option( $wcam_lib_legalpages->wc_am_product_id, $product_id );
+		update_option(
+			$wcam_lib_legalpages->data_key,
+			array(
+				$wcam_lib_legalpages->data_key . '_api_key' => $api_key,
+			),
+		);
+
+		$activate_args = $wcam_lib_legalpages->activate( $args, $product_id );
+		$status_args   = $wcam_lib_legalpages->status( $args, $product_id );
+
+		$user_info[] = array(
+			'id'			=> $id,
+			'status_args'	=> $status_args,
+			'activate_args'	=> $activate_args,
+			'wc_am_activated_key' => $wcam_lib_legalpages->data
+		);
 
 		global $wpdb;
 		$post_tbl     = $wpdb->prefix . 'posts';
@@ -645,7 +673,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		foreach ( $pagesresult as $res ) {
 			$created_policies[] = array(
 				'title'    		=> $res->post_title,
-				'lastUpdated' 	=> gmdate( 'Y/m/d H:i:s', strtotime( $res->post_modified ) ),
+				'lastUpdated' 	=> get_gmt_from_date( $res->post_modified ),
 				'isActive'		=> true,
 				'liveLink'		=> $res->guid,
 				'icon'   		=> $res->legal_page_type,
@@ -707,7 +735,8 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'createdPolicies'				   => $created_policies ?? [],
 				'businessInfo'					   => $business_info ?? [],
 				'languages'						   => $lang_options ?? [],
-				'selected_lang'					   => $lp_general['language'] ?? 'en_US'
+				'selected_lang'					   => $lp_general['language'] ?? 'en_US',
+				'userInfo'						   => $user_info ?? []
 			)
 		);
 	}
