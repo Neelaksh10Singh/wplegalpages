@@ -725,25 +725,17 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 	public function wplp_get_page_settings_for_react_app(WP_REST_Request $request){
 		$pid = $request->get_param('pid');
 		$page_name = $request->get_param('page_name');
-		$json_file_name = $request->get_param('json_file_name');
-		$transient_name = $request->get_param('transient_name');
+		$page_name_option = $request->get_param('page_name_option');
 
 		$fields = get_post_meta( $pid, $page_name, true );
-
-		if ( ! $fields || empty( $fields ) ) {
-			$fields         = array();
-			$response        = wp_remote_get( WPLEGAL_API_URL . '/get_terms_of_use?page_name=' . $json_file_name . '&transient_name=' . $transient_name );
-			$response_status = wp_remote_retrieve_response_code( $response );
-			if ( 200 === $response_status ) {
-				$fields = json_decode( wp_remote_retrieve_body( $response ) );
-			}
-			update_post_meta( $pid, $page_name, $fields );
-		}
+		$options = get_post_meta( $pid, $page_name_option, true );
+		
 
 		return rest_ensure_response(
 			array(
 				'success' => true,
 				'fields'  => $fields,
+				'options' => $options,
 			)
 		);
 	}
