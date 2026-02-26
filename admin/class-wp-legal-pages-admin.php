@@ -228,6 +228,8 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'permission_callback' => array($this, 'permission_callback_for_react_app'),
 			)
 		);
+
+
 		register_rest_route(
 			'wpl/v2', // Namespace
 			'/get_user_dashboard_data', 
@@ -712,6 +714,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			'duration'			=> $lp_general['duration'],
 			'disclosingParty'	=> $lp_general['disclosing-party'],
 			'recipientParty'	=> $lp_general['recipient-party'],
+			'last_updated'	    => $lp_general['last_updated'],
 		);
 
 		require_once plugin_dir_path( __DIR__ ) . 'admin/wizard/class-wp-legal-pages-wizard-page.php';
@@ -752,20 +755,125 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 	}
 
 	public function wplp_get_page_settings_for_react_app(WP_REST_Request $request){
-		$pid = $request->get_param('pid');
-		$page_name = $request->get_param('page_name');
-		$page_name_option = $request->get_param('page_name_option');
 
-		$fields = get_post_meta( $pid, $page_name, true );
-		$options = get_post_meta( $pid, $page_name_option, true );
-		
+		$page = $request->get_param( 'page' );
+		$pid = $request->get_param( 'pid' );
 
-		return rest_ensure_response(
-			array(
-				'success' => true,
-				'fields'  => $fields,
-				'options' => $options,
-			)
+		if ( empty( $page ) ) {
+			return new WP_REST_Response(
+				array(
+					'settings' => array(),
+					'options'  => array(),
+				),
+				400
+			);
+		}
+			
+
+		if ( empty( $pid ) ) {
+			return array(
+				'settings' => array(),
+				'options'  => array(),
+			);
+		}
+
+		switch ( $page ) {
+
+			case 'terms_of_use_free':
+				$settings = get_post_meta( $pid, 'legal_page_terms_of_use_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_terms_of_use_options', true );
+				break;
+
+			case 'fb_policy':
+				$settings = get_post_meta( $pid, 'legal_page_fb_policy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_fb_policy_options', true );
+				break;
+
+			case 'affiliate_agreement':
+				$settings = get_post_meta( $pid, 'legal_page_affiliate_agreement_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_affiliate_agreement_options', true );
+				break;
+
+			case 'standard_privacy_policy':
+				$settings = get_post_meta( $pid, 'legal_page_standard_privacy_policy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_standard_privacy_policy_options', true );
+				break;
+
+			case 'terms_of_use':
+				$settings = get_post_meta( $pid, 'legal_page_clauses', true );
+				$options  = get_post_meta( $pid, 'legal_page_clauses_options', true );
+				break;
+
+			case 'california_privacy_policy':
+				$settings = get_post_meta( $pid, 'legal_page_ccpa_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_ccpa_options', true );
+				break;
+
+			case 'privacy_policy':
+				$settings = get_post_meta( $pid, 'legal_page_privacy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_privacy_options', true );
+				break;
+
+			case 'returns_refunds_policy':
+				$settings = get_post_meta( $pid, 'legal_page_returns_refunds_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_returns_refunds_options', true );
+				break;
+
+			case 'impressum':
+				$settings = get_post_meta( $pid, 'legal_page_impressum_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_impressum_options', true );
+				break;
+
+			case 'custom_legal':
+				$settings = get_post_meta( $pid, 'legal_page_custom_legal_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_custom_legal_options', true );
+				break;
+
+			case 'end_user_license':
+				$settings = get_post_meta( $pid, 'legal_page_end_user_license_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_end_user_license_options', true );
+				break;
+
+			case 'digital_goods_refund_policy':
+				$settings = get_post_meta( $pid, 'legal_page_digital_goods_refund_policy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_digital_goods_refund_policy_options', true );
+				break;
+
+			case 'dmca':
+				$settings = get_post_meta( $pid, 'legal_page_dmca_policy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_dmca_policy_options', true );
+				break;
+
+			case 'cookies_policy':
+				$settings = get_post_meta( $pid, 'legal_page_cookies_policy_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_cookies_policy_options', true );
+				break;
+
+			case 'general_disclaimer':
+				$settings = get_post_meta( $pid, 'legal_page_general_disclaimer_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_general_disclaimer_options', true );
+				break;
+
+			case 'earnings_disclaimer':
+				$settings = get_post_meta( $pid, 'legal_page_earnings_disclaimer_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_earnings_disclaimer_options', true );
+				break;
+
+			case 'coppa':
+				$settings = get_post_meta( $pid, 'legal_page_coppa_settings', true );
+				$options  = get_post_meta( $pid, 'legal_page_coppa_options', true );
+				break;
+
+			default:
+				return array(
+					'settings' => array(),
+					'options'  => array(),
+				);
+		}
+
+		return array(
+			'settings' => $settings ? $settings : array(),
+			'options'  => $options ? $options : array(),
 		);
 	}
 		
