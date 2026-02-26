@@ -229,6 +229,16 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 			)
 		);
 
+		register_rest_route(
+			'wplp-react/v1',
+			'/save-page',
+			array(
+				'methods'  => 'POST',
+				'callback' => array($this, 'wplp_save_page_for_react_app'), // Function to handle the request
+				'permission_callback' => array($this, 'permission_callback_for_react_app'),
+			)
+		);
+
 
 		register_rest_route(
 			'wpl/v2', // Namespace
@@ -874,6 +884,178 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		return array(
 			'settings' => $settings ? $settings : array(),
 			'options'  => $options ? $options : array(),
+		);
+	}
+
+	public function wplp_save_page_for_react_app( WP_REST_Request $request ){
+		$page_content = $request->get_param( 'content' );
+		$page_title   = $request->get_param( 'title' );
+		$page_settings = $request->get_param( 'settings' );
+		$page_options = $request->get_param( 'options' );
+		$post_id	  = $request->get_param( 'post_id' ) ?? null;
+		$last_updated = $request->get_param( 'last_updated' );
+
+		error_log( " saving info : " . print_r( $request->get_params(), true ) );
+		if ( empty( $page_title ) || empty( $page_content ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => 'Page title and content are required.',
+				),
+				400
+			);
+		}
+		$post_args = array();
+		if($post_id){
+			$post_args = array(
+				'ID'           => $post_id,
+				'post_title'   => apply_filters( 'the_title', $page_title ),
+				'post_content' => $page_content,
+			);
+		}
+		else {
+			$post_args = array(
+				'post_title'   => apply_filters( 'the_title', $page_title ),
+				'post_content' => $page_content,
+				'post_type'    => 'page',
+				'post_status'  => 'draft',
+				'post_author'  => "",
+			);
+		}
+		$pid = wp_insert_post( $post_args );
+
+		error_log( " post id : " . print_r( $pid, true ) );
+
+		update_post_meta( $pid, 'is_legal', 'yes' );
+		update_post_meta( $pid, 'legal_page_type', $page_title );
+
+		switch ( $page_title ) {
+
+			case 'terms_of_use':
+				update_post_meta( $pid, 'legal_page_clauses', $page_settings );
+				update_post_meta( $pid, 'legal_page_clauses_options', $page_options );
+				update_option( 'wplegal_terms_of_use_page', $pid );
+				break;
+
+			case 'terms_of_use_free':
+				update_post_meta( $pid, 'legal_page_terms_of_use_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_terms_of_use_options', $page_options );
+				update_option( 'wplegal_terms_of_use_free_page', $pid );
+				break;
+
+			case 'fb_policy':
+				update_post_meta( $pid, 'legal_page_fb_policy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_fb_policy_options', $page_options );
+				update_option( 'wplegal_fb_policy_page', $pid );
+				break;
+
+			case 'affiliate_agreement':
+				update_post_meta( $pid, 'legal_page_affiliate_agreement_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_affiliate_agreement_options', $page_options );
+				update_option( 'wplegal_affiliate_agreement_page', $pid );
+				break;
+
+			case 'standard_privacy_policy':
+				update_post_meta( $pid, 'legal_page_standard_privacy_policy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_standard_privacy_policy_options', $page_options );
+				update_option( 'wplegal_standard_privacy_policy_page', $pid );
+				break;
+
+			case 'california_privacy_policy':
+				update_post_meta( $pid, 'legal_page_ccpa_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_ccpa_options', $page_options );
+				update_option( 'wplegal_california_privacy_policy_page', $pid );
+				break;
+
+			case 'privacy_policy':
+				update_post_meta( $pid, 'legal_page_privacy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_privacy_options', $page_options );
+				update_option( 'wplegal_privacy_policy_page', $pid );
+				break;
+
+			case 'returns_refunds_policy':
+				update_post_meta( $pid, 'legal_page_returns_refunds_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_returns_refunds_options', $page_options );
+				update_option( 'wplegal_returns_refunds_policy_page', $pid );
+				break;
+
+			case 'impressum':
+				update_post_meta( $pid, 'legal_page_impressum_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_impressum_options', $page_options );
+				update_option( 'wplegal_impressum_page', $pid );
+				break;
+
+			case 'custom_legal':
+				update_post_meta( $pid, 'legal_page_custom_legal_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_custom_legal_options', $page_options );
+				update_option( 'wplegal_custom_legal_page', $pid );
+				break;
+
+			case 'end_user_license':
+				update_post_meta( $pid, 'legal_page_end_user_license_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_end_user_license_options', $page_options );
+				update_option( 'wplegal_end_user_license_page', $pid );
+				break;
+
+			case 'digital_goods_refund_policy':
+				update_post_meta( $pid, 'legal_page_digital_goods_refund_policy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_digital_goods_refund_policy_options', $page_options );
+				update_option( 'wplegal_digital_goods_refund_policy_page', $pid );
+				break;
+
+			case 'dmca':
+				update_post_meta( $pid, 'legal_page_dmca_policy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_dmca_policy_options', $page_options );
+				update_option( 'wplegal_dmca_page', $pid );
+				break;
+
+			case 'cookies_policy':
+				update_post_meta( $pid, 'legal_page_cookies_policy_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_cookies_policy_options', $page_options );
+				update_option( 'wplegal_cookies_policy_page', $pid );
+				break;
+
+			case 'general_disclaimer':
+				update_post_meta( $pid, 'legal_page_general_disclaimer_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_general_disclaimer_options', $page_options );
+				update_option( 'wplegal_general_disclaimer_page', $pid );
+				break;
+
+			case 'earnings_disclaimer':
+				update_post_meta( $pid, 'legal_page_earnings_disclaimer_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_earnings_disclaimer_options', $page_options );
+				update_option( 'wplegal_earnings_disclaimer_page', $pid );
+				break;
+
+			case 'coppa':
+				update_post_meta( $pid, 'legal_page_coppa_settings', $page_settings );
+				update_post_meta( $pid, 'legal_page_coppa_options', $page_options );
+				update_option( 'wplegal_coppa_policy_page', $pid );
+				break;
+
+			default:
+				return new WP_REST_Response(
+					array( 'message' => 'Invalid page type' ),
+					400
+				);
+		}
+
+		$lp_general                 = get_option( 'lp_general' );
+		$lp_general['last_updated'] = $last_updated;
+		update_option( 'lp_general', $lp_general );
+
+		$url = $url = admin_url( 'post.php?post=' . $pid . '&action=edit' );
+		$url = str_replace( '&amp;', '&', $url );
+
+		error_log(" Page saved with ID: " . $pid . " and URL: " . $url );
+
+		return new WP_REST_Response(
+			array(
+				'success' => true,
+				'message' => 'Page saved successfully.',
+				'url'     => $url,
+			),
+			200
 		);
 	}
 		
