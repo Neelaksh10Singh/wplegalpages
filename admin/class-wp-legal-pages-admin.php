@@ -691,6 +691,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				'icon'   		=> $res->legal_page_type,
 				'description' 	=> "",
 				'content'		=> $res->post_content,
+				'postID'		=> $this->wplegalpages_get_pid_by_page( $res->legal_page_type ),
 			);
 		}
 
@@ -758,6 +759,8 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 
 		$page = $request->get_param( 'page' );
 		$pid = $request->get_param( 'pid' );
+
+		error_log("DODODO getting page_settings for page " . print_r($page, true) . " with PID value " . print_r($pid, true));
 
 		if ( empty( $page ) ) {
 			return new WP_REST_Response(
@@ -872,11 +875,67 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		}
 
 		return array(
-			'settings' => $settings ? $settings : array(),
+			'page_settings' => $settings ? $this->convert_settings_to_array( $settings ) : array(),
 			'options'  => $options ? $options : array(),
 		);
 	}
 		
+
+	/**
+	 * Recursively converts settings from keyed-object format to indexed-array format
+	 * expected by the React frontend.
+	 */
+	private function convert_settings_to_array( $settings ) {
+	    if ( empty( $settings ) ) {
+	        return array();
+	    }
+	
+	    // Convert stdClass to array recursively
+	    if ( is_object( $settings ) ) {
+	        $settings = (array) $settings;
+	    }
+	
+	    if ( ! is_array( $settings ) ) {
+	        return array();
+	    }
+	
+	    $result = array();
+	
+	    foreach ( $settings as $id => $item ) {
+	        // Convert stdClass item to array
+	        if ( is_object( $item ) ) {
+	            $item = (array) $item;
+	        }
+		
+	        if ( ! is_array( $item ) ) {
+	            continue;
+	        }
+		
+	        // Ensure the id is set on the item
+	        $item['id'] = $id;
+		
+	        // Recursively convert "fields"
+	        if ( isset( $item['fields'] ) && ( is_array( $item['fields'] ) || is_object( $item['fields'] ) ) ) {
+	            $item['fields'] = $this->convert_settings_to_array( $item['fields'] );
+	        }
+		
+	        // Recursively convert "sub_fields"
+	        if ( isset( $item['sub_fields'] ) && ( is_array( $item['sub_fields'] ) || is_object( $item['sub_fields'] ) ) ) {
+	            $item['sub_fields'] = $this->convert_settings_to_array( $item['sub_fields'] );
+	        }
+		
+	        $result[] = $item;
+	    }
+	
+	    // Sort by "position" if present
+	    usort( $result, function( $a, $b ) {
+	        $pos_a = isset( $a['position'] ) ? (int) $a['position'] : 0;
+	        $pos_b = isset( $b['position'] ) ? (int) $b['position'] : 0;
+	        return $pos_a - $pos_b;
+	    });
+	
+	    return $result;
+	}
 	/**
 	 * Function to display gdpr review notice on admin page.
 	 *
