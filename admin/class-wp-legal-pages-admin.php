@@ -1051,6 +1051,11 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		}
 
 		$lp_general                 = get_option( 'lp_general' );
+
+		if ( ! is_array( $lp_general ) ) {
+		    $lp_general = array();
+		}
+		
 		$lp_general['last_updated'] = $last_updated;
 		$lp_general['domain']		= $business_info['domain'] ?? '';
 		$lp_general['business']		= $business_info['business'] ?? '';
