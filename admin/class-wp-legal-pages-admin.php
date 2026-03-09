@@ -706,6 +706,11 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		}
 
 		$lp_general = get_option("lp_general");
+
+		if (!is_array($lp_general)) {
+			$lp_general = array();
+		}
+
 		$business_info[] = array(
 			'domain'			=> $lp_general['domain'],
 			'business'			=> $lp_general['business'],
@@ -1035,13 +1040,15 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 	public function wplp_save_page_for_react_app( WP_REST_Request $request ){
 		$page_content = $request->get_param( 'content' );
 		$page_title   = $request->get_param( 'title' );
+		$page_slug    = $request->get_param( 'slug' );
 		$page_settings = $request->get_param( 'settings' );
 		$page_options = $request->get_param( 'options' );
 		$post_id	  = $request->get_param( 'post_id' ) ?? null;
 		$last_updated = $request->get_param( 'last_updated' );
+		$business_info = $request->get_param( 'business' );
 
 		error_log( " saving info : " . print_r( $request->get_params(), true ) );
-		if ( empty( $page_title ) || empty( $page_content ) ) {
+		if ( empty( $page_slug ) || empty( $page_title ) || empty( $page_content ) ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
@@ -1072,9 +1079,9 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		error_log( " post id : " . print_r( $pid, true ) );
 
 		update_post_meta( $pid, 'is_legal', 'yes' );
-		update_post_meta( $pid, 'legal_page_type', $page_title );
+		update_post_meta( $pid, 'legal_page_type', $page_slug );
 
-		switch ( $page_title ) {
+		switch ( $page_slug ) {
 
 			case 'terms_of_use':
 				update_post_meta( $pid, 'legal_page_clauses', $page_settings );
@@ -1186,7 +1193,31 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		}
 
 		$lp_general                 = get_option( 'lp_general' );
+
+		if ( ! is_array( $lp_general ) ) {
+		    $lp_general = array();
+		}
+		
 		$lp_general['last_updated'] = $last_updated;
+		$lp_general['domain']		= $business_info['domain'] ?? '';
+		$lp_general['business']		= $business_info['business'] ?? '';
+		$lp_general['trading']		= $business_info['trading'] ?? '';
+		$lp_general['phone']		= $business_info['phone'] ?? '';
+		$lp_general['street']		= $business_info['street'] ?? '';
+		$lp_general['cityState']	= $business_info['cityState'] ?? '';
+		$lp_general['country']		= $business_info['country'] ?? '';
+		$lp_general['email']		= $business_info['email'] ?? '';
+		$lp_general['address']		= $business_info['address'] ?? '';
+		$lp_general['facebook-url']	= $business_info['facebookUrl'] ?? '';
+		$lp_general['google-url']	= $business_info['googleUrl'] ?? '';
+		$lp_general['twitter-url']	= $business_info['twitterUrl'] ?? '';
+		$lp_general['linkedin-url']	= $business_info['linkedinUrl'] ?? '';
+		$lp_general['date']			= $business_info['date'] ?? '';
+		$lp_general['days']			= $business_info['days'] ?? '';
+		$lp_general['duration']		= $business_info['duration'] ?? '';
+		$lp_general['disclosing-party']	= $business_info['disclosingParty'] ?? '';
+		$lp_general['recipient-party']	= $business_info['recipientParty'] ?? '';
+
 		update_option( 'lp_general', $lp_general );
 
 		$url = $url = admin_url( 'post.php?post=' . $pid . '&action=edit' );
@@ -1236,7 +1267,9 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 	        }
 		
 	        // Ensure the id is set on the item
-	        $item['id'] = $id;
+	        if ( ! isset( $item['id'] ) ) {
+        	    $item['id'] = $id;
+        	}
 		
 	        // Recursively convert "fields"
 	        if ( isset( $item['fields'] ) && ( is_array( $item['fields'] ) || is_object( $item['fields'] ) ) ) {
