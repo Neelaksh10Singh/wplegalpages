@@ -759,17 +759,159 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		return rest_ensure_response(
 			array(
 				'success' => true,
-				'plan'                		       => $api_user_plan,
-				'product_id' 					   => $product_id,
-				'createdPolicies'				   => $created_policies ?? [],
-				'businessInfo'					   => $business_info ?? [],
-				'languages'						   => $lang_options ?? [],
-				'selected_lang'					   => $lp_general['language'] ?? 'en_US',
-				'userInfo'						   => $user_info ?? []
+				'plan'                		      			=> $api_user_plan,
+				'product_id' 					  			=> $product_id,
+				'createdPolicies'				   			=> $created_policies ?? [],
+				'businessInfo'					   			=> $business_info ?? [],
+				'languages'						   			=> $lang_options ?? [],
+				'selected_lang'					   			=> $lp_general['language'] ?? 'en_US',
+				'userInfo'						   			=> $user_info ?? [],
+				'pro_privacy_policy_third_party_services' 	=> $this->wplegalpages_get_gdpr_sections(),
 			)
 		);
 	}
 
+	public static function wplegalpages_get_gdpr_sections() {
+
+		$sections = array();
+
+		// -------------------------------------------------
+		// Plugin not installed
+		// -------------------------------------------------
+		if ( ! file_exists( WP_PLUGIN_DIR . '/gdpr-cookie-consent' ) ) {
+
+			$sections[] = array(
+				'id'          => 'gdpr_third_party_services',
+				'title'       => '<strong>To scan website for third-party services, install and activate plugin <a href="https://wordpress.org/plugins/gdpr-cookie-consent/" target="_blank">GDPR Cookie Consent</a>.</strong>',
+				'description' => '',
+				'type'        => 'section',
+				'position'    => 1,
+				'parent'      => 'allow_third_party_yes',
+				'collapsible' => '',
+				'sub_fields'  => array(),
+			);
+
+			return $sections;
+		}
+
+		// -------------------------------------------------
+		// Plugin installed but not active
+		// -------------------------------------------------
+		if ( ! is_plugin_active( 'gdpr-cookie-consent/gdpr-cookie-consent.php' ) ) {
+
+			$sections[] = array(
+				'id'          => 'gdpr_third_party_services',
+				'title'       => '<strong><a href="' . admin_url( 'plugins.php' ) . '" target="_blank">Activate</a> plugin GDPR Cookie Consent, to scan for third-party services on your website.</strong>',
+				'description' => '',
+				'type'        => 'section',
+				'position'    => 1,
+				'parent'      => 'allow_third_party_yes',
+				'collapsible' => '',
+				'sub_fields'  => array(),
+			);
+
+			return $sections;
+		}
+
+		// -------------------------------------------------
+		// Check last scan
+		// -------------------------------------------------
+		global $wpdb;
+
+		$scan_table = $wpdb->prefix . 'wpl_cookie_scan';
+		$sql        = "SELECT * FROM `$scan_table` ORDER BY id_wpl_cookie_scan DESC LIMIT 1";
+		$last_scan  = $wpdb->get_row( $sql, ARRAY_A ); // phpcs:ignore
+
+		// -------------------------------------------------
+		// No scan yet
+		// -------------------------------------------------
+		if ( ! $last_scan ) {
+
+			$sections[] = array(
+				'id'          => 'gdpr_third_party_services',
+				'title'       => '<strong><a href="' . admin_url( 'admin.php?page=gdpr-cookie-consent#cookie_settings#cookie_list' ) . '" target="_blank">Scan now</a> to automatically detect third-party services on your website.</strong>',
+				'description' => '',
+				'type'        => 'section',
+				'position'    => 1,
+				'parent'      => 'allow_third_party_yes',
+				'collapsible' => '',
+				'sub_fields'  => array(),
+			);
+
+			return $sections;
+		}
+
+		// -------------------------------------------------
+		// Scan exists
+		// -------------------------------------------------
+		$last_scan_date = gmdate( 'F j, Y g:i a T', $last_scan['created_at'] );
+
+		$args = array(
+			'post_type'   => 'gdprpolicies',
+			'post_status' => 'publish',
+			'numberposts' => -1,
+		);
+
+		$gdpr_posts = get_posts( $args );
+
+		// -------------------------------------------------
+		// Services detected
+		// -------------------------------------------------
+		if ( ! empty( $gdpr_posts ) ) {
+
+			$sub_fields = array();
+			$position   = 1;
+
+			foreach ( $gdpr_posts as $post ) {
+
+				$service_name          = str_replace( ' ', '_', $post->post_title );
+				$service_name_prefixed = $post->ID . 'gdpr_scanned_' . $service_name;
+
+				$sub_fields[] = array(
+					'id'          => $service_name_prefixed,
+					'title'       => $post->post_title,
+					'description' => '',
+					'type'        => 'checkbox',
+					'position'    => $position,
+					'name'        => $service_name_prefixed,
+					'value'       => 1,
+					'checked'     => true,
+					'sub_fields'  => array(),
+				);
+
+				$position++;
+			}
+
+			$sections[] = array(
+				'id'          => 'gdpr_third_party_services',
+				'title'       => '<strong>Last scan:</strong> ' . $last_scan_date . '<br>Third-party services detected:',
+				'description' => '',
+				'type'        => 'section',
+				'position'    => 1,
+				'parent'      => 'allow_third_party_yes',
+				'collapsible' => '',
+				'sub_fields'  => $sub_fields,
+			);
+
+			return $sections;
+		}
+
+		// -------------------------------------------------
+		// No services detected
+		// -------------------------------------------------
+		$sections[] = array(
+			'id'          => 'gdpr_third_party_services',
+			'title'       => '<strong>Last scan:</strong> ' . $last_scan_date . '<br>No third-party services detected.',
+			'description' => '',
+			'type'        => 'section',
+			'position'    => 1,
+			'parent'      => 'allow_third_party_yes',
+			'collapsible' => '',
+			'sub_fields'  => array(),
+		);
+
+		return $sections;
+}
 	public function wplp_get_page_settings_for_react_app(WP_REST_Request $request){
 
 		$page = $request->get_param( 'page' );
@@ -4744,7 +4886,7 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		 */
 		public function wplegalpages_get_page_sections( $page ) {
 			require_once plugin_dir_path( __DIR__ ) . 'admin/wizard/class-wp-legal-pages-wizard-page.php';
-			$lp          = new WP_Legal_Pages_Wizard_Page();
+			$lp          = new WP_Legal_Pages_Wizard_Page();   
 			$lp_sections = (array) $lp->get_section_fields_by_page( $page );
 			if ( 'privacy_policy' === $page ) {
 				$lp_sections = self::wplegalpages_add_gdpr_options_to_remote_data( $lp_sections );
