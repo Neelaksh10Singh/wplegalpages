@@ -366,6 +366,8 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 		if ( $master_key !== $incoming_key ) {
 			return new WP_Error('invalid_master_key', 'Master key mismatch.', ['status' => 401]);
 		}
+		global $wplp_rest_authenticated;
+		$wplp_rest_authenticated = true;
 		return true; // All good → allow callback
 	}
 
@@ -1183,6 +1185,28 @@ if ( ! class_exists( 'WP_Legal_Pages_Admin' ) ) {
 				update_post_meta( $pid, 'legal_page_coppa_settings', $page_settings );
 				update_post_meta( $pid, 'legal_page_coppa_options', $page_options );
 				update_option( 'wplegal_coppa_policy_page', $pid );
+				break;
+
+			case "ccpa_free":
+			case "terms_forced":
+			case "gdpr_cookie_policy":
+			case "gdpr_privacy_policy":
+			case "blog_comments_policy":
+			case "linking_policy":
+			case "external_link_policy":
+			case "digital_goods_refund_policy":
+			case "affiliate_disclosure":
+			case "amazon_affiliate_disclosure":
+			case "testimonials_disclosure":
+			case "confidentiality_disclosure":
+			case "advertising_disclosure":
+			case "medical_disclaimer":
+			case "newsletters":
+			case "antispam":
+			case "ftc_statement":
+			case "double_dart":
+			case "cpra":
+			case "about_us":
 				break;
 
 			default:
